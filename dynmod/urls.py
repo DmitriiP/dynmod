@@ -10,12 +10,10 @@ ajaxpatterns = patterns('dynmod.ajax',
 )
 
 urlpatterns = patterns('',
-    # Examples:
     url(r'^$', 'dynmod.views.home', name='home'),
     url(r'^restart/$', 'dynmod.views.restart', name='restart'),
     url(r'^models_editor/$', 'dynmod.views.models_editor', name='models_editor'),
     url(r'^ajax/', include(ajaxpatterns)),
-    # url(r'^blog/', include('blog.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
 )

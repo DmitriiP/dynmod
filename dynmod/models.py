@@ -1,5 +1,5 @@
 import json
-from django.db import models, migrations
+from django.db import models
 from django.contrib import admin
 
 
