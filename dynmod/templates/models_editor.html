@@ -1,0 +1,5 @@
+<form method="POST" action="/models_editor/">
+    <textarea class="form-control" name="models" rows=80>{{ models|safe }}</textarea>
+    <button type="submit" class="btn btn-primary">Update</button>
+    {% csrf_token %}
+</form>

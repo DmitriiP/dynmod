@@ -1,0 +1,72 @@
+[
+    {
+        "id": "table",
+        "title": "serious test",
+        "fields": [
+            {
+                "id": "not_a_name",
+                "title": "Name",
+                "type": "char",
+                "kwargs": {"max_length": 1024}
+            },
+            {
+                "id": "value",
+                "title": "value for this user",
+                "type": "int"
+            },
+            {
+                "id": "start_date",
+                "title": "nothing here",
+                "type": "date"
+            },
+            {
+                "id": "end_date",
+                "title": "some date field",
+                "type": "date"
+            }
+        ]
+    },
+    {
+        "id": "example",
+        "title": "test model",
+        "fields": [
+            {
+                "id": "name",
+                "title": "Name",
+                "type": "char"
+            },
+            {
+                "id": "value",
+                "title": "value for this user",
+                "type": "int"
+            }
+        ]
+    },
+    {
+        "id": "example2",
+        "title": "big bad model",
+        "fields": [
+            {
+                "id": "name",
+                "title": "Name",
+                "type": "char"
+            },
+            {
+                "id": "value",
+                "title": "value for this user",
+                "type": "int"
+            },
+            {
+                "id": "start_date",
+                "title": "superfield",
+                "type": "date"
+            },
+            {
+                "id": "end_date",
+                "title": "another example of a great field",
+                "type": "date"
+            }
+        ]
+    }
+]
+

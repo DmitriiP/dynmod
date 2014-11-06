@@ -1,0 +1,136 @@
+<!doctype html>
+<head>
+    <title>Dynamic Models Test</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.2/themes/start/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.2/jquery-ui.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+    <style>
+        .model-selector {
+            cursor: pointer;
+        }
+        textarea {
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class="row">
+            <div class="col-md-3">
+                <h4>Models</h4>
+                <hr>
+                <ul class="nav nav-stacked" id="models-nav"></ul>
+                <hr>
+                <a class="btn btn-info btn-xs" href="#" id="model-editor-btn">Edit Models File</a>
+            </div>
+            <div class="col-md-9">
+                <h4>Editor</h4>
+                <hr>
+                <div id="editor-container"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+$(function() {
+        $.get("ajax/get_models/", function(data) {
+            data = JSON.parse(data);
+            var nav = $('#models-nav');
+            $.each(data, function() {
+                li = $('<li />');
+                a = $('<a />', {
+                    'href': '#',
+                    'data-model': this[0],
+                    'class': 'model-selector'
+                }).text(this[1]);
+                nav.append(li.append(a).hide().fadeIn());
+            });
+
+        });
+        $("#model-editor-btn").on('click', function(e) {
+            e.preventDefault();
+            $("#editor-container").load("/models_editor/");
+        });
+        $('#models-nav').on('click', '.model-selector', function(e) {
+            e.preventDefault();
+            $('.model-selector').removeClass('bg-primary');
+            $(this).addClass('bg-primary');
+            var editor = $('#editor-container').empty();
+            var model_name = $(this).data('model');
+            $.get("ajax/model/" + model_name + '/', function(model) {
+                model = JSON.parse(model);
+                window.model = model;
+                editor.append($('<h3>' + model.name + '</h3>'));
+                var table = $('<table />', {
+                    'class': 'table table-bordered'
+                });
+                var head_row = $('<tr />', {'id': 'head-row'});
+                $.each(model.fields, function() {
+                    var th = $('<th />', {
+                        'data-type': this.type,
+                        'data-id': this.id,
+                    }).text(this.title);
+                    head_row.append(th);
+                });
+                table.append($('<thead />').append(head_row));
+                editor.append(table);
+
+                $.get("ajax/model_objects/" + model_name + '/', function(data) {
+                    data = JSON.parse(data);
+                    var tbody = $('<tbody />');
+                    $.each(data, function() {
+                        var object = this;
+                        var row = $('<tr />');
+                        $('#head-row th').each(function() {
+                            field_name = $(this).data('id');
+                            if (field_name == 'id') 
+                                row.append($('<td class="object-id">' + object.pk + '</td>'));
+                            else {
+                                row.append($('<td />', {
+                                        'class': $(this).data('type') + '-cell',
+                                        'data-type': $(this).data('type'),
+                                        'data-id': $(this).data('id')
+                                    }).text(object.fields[field_name]));
+                            }
+                        });
+                        tbody.append(row);
+                    });
+                    table.append(tbody);
+                });
+            });
+        });
+        $('#editor-container').on('click', '.char-cell, .int-cell, .date-cell', function() {
+            var value = $(this).text();
+            $(this).empty();
+            var input = $('<input />', {
+                'class': 'form-control edited',
+                'data-parent': $(this).attr('class')
+            }).val(value);
+            if ($(this).hasClass('int-cell'))
+                input.addClass('only-numbers');
+            else if ($(this).hasClass('date-cell')) {
+                input.data('selecting', true);
+                
+                input.datepicker({
+                    'onClose': function() {$('.edited').data('selecting', false).trigger('focusout');},
+                    'dateFormat': "yy-mm-dd"
+                });
+            }
+            $(this).removeClass().append(input);
+            input.trigger('focus');
+        });
+        $('#editor-container').on('keyup', '.only-numbers', function() {
+            if (this.value != this.value.replace(/[^0-9\.]/g, ''))
+               this.value = this.value.replace(/[^0-9\.]/g, '');
+        });
+        $('#editor-container').on('focusout', '.edited', function() {
+            if ($(this).data('selecting') == true)
+                return null;
+            var value = $(this).val();
+            $(this).parent().addClass($(this).data('parent')).empty().text(value);
+        });
+});
+    </script>
+</body>
