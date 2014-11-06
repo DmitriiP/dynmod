@@ -1,4 +1,5 @@
 <!doctype html>
+<html>
 <head>
     <title>Dynamic Models Test</title>
 
@@ -33,7 +34,23 @@
             </div>
         </div>
     </div>
-    <script>
+<script>
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+};
+
 $(function() {
         $.get("ajax/get_models/", function(data) {
             data = JSON.parse(data);
@@ -129,8 +146,31 @@ $(function() {
             if ($(this).data('selecting') == true)
                 return null;
             var value = $(this).val();
+            var row = $(this).parent().parent();
+            var id = $('.object-id', row).text();
+            var model = $('.bg-primary').data('model');
+            var field = $(this).parent().data('id');
+            data = {
+                'value': value,
+                'id': id,
+                'field': field,
+                'model_name': model
+            }
+            $.ajax({
+                    url: '/ajax/update_object/',
+                    type: 'PUT',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    headers: { "X-CSRFToken": getCookie("csrftoken") },
+                    success: function(data) {
+                        data = JSON.parse(data);
+                        if (data['error'] !== undefined)
+                            alert(data['error']);
+                    }
+                });
             $(this).parent().addClass($(this).data('parent')).empty().text(value);
         });
 });
-    </script>
+</script>
 </body>
+</html>

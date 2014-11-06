@@ -7,6 +7,7 @@ ajaxpatterns = patterns('dynmod.ajax',
     url(r'^get_models/$', 'get_models'),
     url(r'^model/(?P<model_name>\w+)/$', 'model'),
     url(r'^model_objects/(?P<model_name>\w+)/$', 'model_objects'),
+    url(r'^update_object/$', 'update_object'),
 )
 
 urlpatterns = patterns('',
