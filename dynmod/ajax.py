@@ -43,25 +43,25 @@ def update_object(request):
     try:
         put = json.loads(put)
     except:
-        return HttpResponse('{"error": "Incorrect request format"}')
+        return HttpResponse('{"error": "Incorrect request format"}', status=400)
 
     model_name = put.get('model_name', None)
     if model_name is None or model_name not in apps.all_models['dynmod']:
-        return HttpResponse('{"error": "Missing model name, or it is incorrect."}')
+        return HttpResponse('{"error": "Missing model name, or it is incorrect."}', status=400)
     mdl = apps.all_models['dynmod'][model_name]
     field = put.get('field', None)
     if field is None or field not in mdl._meta.get_all_field_names():
-        return HttpResponse('{"error": "Missing field name, or it is incorrect."}')
+        return HttpResponse('{"error": "Missing field name, or it is incorrect."}', status=400)
     obj_id = int(put.get('id', '0'))
     if obj_id == 0 or not mdl.objects.filter(id=obj_id).exists():
-        return HttpResponse('{"error": "Missing object id, or it is incorrect."}')
+        return HttpResponse('{"error": "Missing object id, or it is incorrect."}', status=400)
     obj = mdl.objects.get(id=obj_id)
     value = put.get('value', None)
     try:
         setattr(obj, field, value)
         obj.save()
-    except ValidationError:
-        return HttpResponse('{"error": "Value didn\'t pass validation."}')
+    except (ValidationError, ValueError):
+        return HttpResponse('{"error": "Value didn\'t pass validation."}', status=400)
     return HttpResponse('{"msg": "ok"}')
 
 
@@ -69,7 +69,7 @@ def is_field_valid(field_type, value):
     try:
         field = DYNAMIC_FIELD_TYPES[field_type]
         field().to_python(value)
-    except:
+    except (ValidationError, ValueError):
         return False
     return True
 
@@ -92,14 +92,19 @@ def add_object(request):
     try:
         data = json.loads(data)
     except:
-        return HttpResponse('{"error": "Incorrect request format"}')
+        return HttpResponse('{"error": "Incorrect request format"}', status=400)
     model_name = data.get('model', None)
     if model_name is None or model_name not in apps.all_models['dynmod']:
-        return HttpResponse('{"error": "Missing model name, or it is incorrect."}')
+        return HttpResponse('{"error": "Missing model name, or it is incorrect."}', status=400)
     mdl = apps.all_models['dynmod'][model_name]
     fields = {}
     for field in data['fields']:
         if is_field_valid(field['type'], field['value']):
             fields[field['id']] = field['value']
-    mdl(**fields).save()
-    return HttpResponse('{"msg": "ok"}')
+    if len(fields) != len(data['fields']):
+        return HttpResponse('{"error": "Some fields didn\'t pass validation."}', status=400)
+    try:
+        mdl(**fields).save()
+    except (TypeError, ValueError):
+        return HttpResponse('{"error": "Incorrect field values"}', status=400)
+    return HttpResponse('{"msg": "ok"}', status=201)
