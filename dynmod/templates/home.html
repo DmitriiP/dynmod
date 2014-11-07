@@ -26,6 +26,7 @@
                 <ul class="nav nav-stacked" id="models-nav"></ul>
                 <hr>
                 <a class="btn btn-info btn-xs" href="#" id="model-editor-btn">Edit Models File</a>
+                <a class="btn btn-success btn-xs" href="/admin/">Admin Panel</a>
             </div>
             <div class="col-md-9">
                 <h4>Editor</h4>
@@ -78,6 +79,7 @@ $(function() {
             var model_name = $(this).data('model');
             $.get("ajax/model/" + model_name + '/', function(model) {
                 model = JSON.parse(model);
+                model.id = model_name;
                 window.model = model;
                 editor.append($('<h3>' + model.name + '</h3>'));
                 var table = $('<table />', {
@@ -93,6 +95,7 @@ $(function() {
                 });
                 table.append($('<thead />').append(head_row));
                 editor.append(table);
+                editor.append($('<button class="btn btn-default" id="add-obj-btn">Add an object</button>'));
 
                 $.get("ajax/model_objects/" + model_name + '/', function(data) {
                     data = JSON.parse(data);
@@ -117,6 +120,86 @@ $(function() {
                     table.append(tbody);
                 });
             });
+        });
+        $('#editor-container').on('click', '#add-obj-btn', function() {
+            $(this).attr('disabled','disabled');
+            $(this).fadeOut();
+            panel = $('<div class="panel panel-default" id="add-panel"><div class="panel-heading">Add a ' + model.name + ' object</div></div>');
+            contents = $('<div class="panel-body form-horizontal"></div>');
+            $.each(model.fields, function() {
+                if (this.id == 'id')
+                    return null;
+                form_group = $('<div class="form-group" />');
+                label = $('<label for="' + this.id + '" class="col-md-3 control-label">' + this.title + '</label>');
+                form_group.append(label);
+                input = $('<div class="col-md-9"><input data-type="' + this.type + '" class="form-control" id="' + this.id + '"></div>');
+                if (this.type == 'date')
+                    $('input', input).addClass('date-input');
+                else if (this.type == 'int')
+                    $('input', input).addClass('only-numbers');
+                form_group.append(input);
+                contents.append(form_group);
+            });
+            form_group = $('<div class="form-group" />');
+            btn = $('<div class="col-md-offset-3 col-md-9"><button class="btn btn-primary" id="obj-ready">Add</button></div>');
+            form_group.append(btn);
+            contents.append(form_group);
+            panel.append(contents);
+            $('#editor-container').append(panel.hide());
+            panel.slideDown();
+
+        });
+        $('#editor-container').on('change', '#add-panel input', function() {
+            var input = $(this);
+            value = input.val();
+            type = input.data('type');
+            $.ajax({
+                url: '/ajax/validate/',
+                type: 'POST',
+                data: {'value': value, 'type': type},
+                headers: { "X-CSRFToken": getCookie("csrftoken") },
+                success: function(data) {
+                    data = JSON.parse(data);
+                    console.log(data);
+                    if (data['result'] == 1){
+                        input.parent().addClass('has-error');
+                        $('#obj-ready').attr('disabled','disabled');
+                    }
+                    else {
+                        input.parent().removeClass('has-error');
+                        $('#obj-ready').removeAttr('disabled');
+                    }
+                }
+            });
+        });
+        $('#editor-container').on('click', '#obj-ready', function() {
+            $(this).attr('disabled','disabled');
+            var fields = [];
+            $("#add-panel input").each(function() {
+                var input = $(this);
+                fields.push({
+                    'value': input.val(),
+                    'type': input.data('type'),
+                    'id': input.attr('id')
+                });
+            });
+            data = {
+                'fields': fields,
+                'model': model.id
+            };
+            $.ajax({
+                url: '/ajax/add_object/',
+                type: 'POST',
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                headers: { "X-CSRFToken": getCookie("csrftoken") },
+                success: function(data) {
+                    $('.bg-primary').trigger('click');
+                }
+            });
+        });
+        $('#editor-container').on('focus', '.date-input', function() {
+            $(this).datepicker({'dateFormat': "yy-mm-dd"});
         });
         $('#editor-container').on('click', '.char-cell, .int-cell, .date-cell', function() {
             var value = $(this).text();
@@ -157,17 +240,17 @@ $(function() {
                 'model_name': model
             }
             $.ajax({
-                    url: '/ajax/update_object/',
-                    type: 'PUT',
-                    data: JSON.stringify(data),
-                    contentType: 'application/json',
-                    headers: { "X-CSRFToken": getCookie("csrftoken") },
-                    success: function(data) {
-                        data = JSON.parse(data);
-                        if (data['error'] !== undefined)
-                            alert(data['error']);
-                    }
-                });
+                url: '/ajax/update_object/',
+                type: 'PUT',
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                headers: { "X-CSRFToken": getCookie("csrftoken") },
+                success: function(data) {
+                    data = JSON.parse(data);
+                    if (data['error'] !== undefined)
+                        alert(data['error']);
+                }
+            });
             $(this).parent().addClass($(this).data('parent')).empty().text(value);
         });
 });

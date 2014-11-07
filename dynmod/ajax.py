@@ -63,3 +63,43 @@ def update_object(request):
     except ValidationError:
         return HttpResponse('{"error": "Value didn\'t pass validation."}')
     return HttpResponse('{"msg": "ok"}')
+
+
+def is_field_valid(field_type, value):
+    try:
+        field = DYNAMIC_FIELD_TYPES[field_type]
+        field().to_python(value)
+    except:
+        return False
+    return True
+
+
+@require_http_methods(['POST'])
+def validate(request):
+    try:
+        field_type = request.POST['type']
+        value = request.POST['value']
+        if not is_field_valid(field_type, value):
+            return HttpResponse('{"result": 1}')
+    except KeyError:
+        return HttpResponse('{"result": 1}')
+    return HttpResponse('{"result": 0}')
+
+
+@require_http_methods(['POST'])
+def add_object(request):
+    data = request.body
+    try:
+        data = json.loads(data)
+    except:
+        return HttpResponse('{"error": "Incorrect request format"}')
+    model_name = data.get('model', None)
+    if model_name is None or model_name not in apps.all_models['dynmod']:
+        return HttpResponse('{"error": "Missing model name, or it is incorrect."}')
+    mdl = apps.all_models['dynmod'][model_name]
+    fields = {}
+    for field in data['fields']:
+        if is_field_valid(field['type'], field['value']):
+            fields[field['id']] = field['value']
+    mdl(**fields).save()
+    return HttpResponse('{"msg": "ok"}')
